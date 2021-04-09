@@ -1,0 +1,19 @@
+{
+	"extends": ["prettier", "standard-with-typescript"],
+	"parser": "@typescript-eslint/parser",
+	"parserOptions": {
+		"project": ["./tsconfig.json"]
+	},
+
+	"plugins": ["@typescript-eslint", "prettier"],
+	"rules": {
+		"prettier/prettier": 2,
+		"no-tabs": "off",
+		"@typescript-eslint/indent": "off",
+		"comma-dangle": "off",
+		"no-void": "off",
+		"@typescript-eslint/strict-boolean-expressions": "off",
+		"@typescript-eslint/space-before-function-paren": "off",
+		"@typescript-eslint/return-await": "off"
+	}
+}
