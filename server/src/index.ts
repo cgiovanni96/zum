@@ -1,7 +1,11 @@
 import Fastify from 'fastify'
+import FastifyWS from 'fastify-websocket'
+import soup from './soup'
 // import mercurius from 'mercurius'
 
 const app = Fastify()
+
+app.register(FastifyWS)
 
 // const schema = `
 //   type Query {
@@ -25,5 +29,6 @@ app.get('/', async function () {
 })
 
 app.listen(5000, () => {
+	soup()
 	console.log('Serve Ready at port 5000')
 })
