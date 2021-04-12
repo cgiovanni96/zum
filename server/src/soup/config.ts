@@ -1,8 +1,5 @@
-import {
-	RtpCodecCapability,
-	TransportListenIp,
-	WorkerLogTag
-} from 'mediasoup/lib/types'
+import { mediaCodecs } from './mediaCodecs'
+import { TransportListenIp, WorkerLogTag } from 'mediasoup/lib/types'
 
 export const config = {
 	// http server ip, port, and peer timeout constant
@@ -31,14 +28,7 @@ export const config = {
 			] as WorkerLogTag[]
 		},
 		router: {
-			mediaCodecs: [
-				{
-					kind: 'audio',
-					mimeType: 'audio/opus',
-					clockRate: 48000,
-					channels: 2
-				}
-			] as RtpCodecCapability[]
+			mediaCodecs
 		},
 
 		// rtp listenIps are the most important thing, below. you'll need
