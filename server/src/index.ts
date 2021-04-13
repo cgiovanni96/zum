@@ -27,6 +27,8 @@ const main = async () => {
 	// }
 
 	const app = express()
+	app.use(express.json())
+	app.use(express.static(__dirname))
 
 	const webServer = http.createServer(app)
 	webServer.on('error', (err) => {
@@ -49,9 +51,7 @@ const main = async () => {
 		path: '/server'
 	})
 
-	console.log('socket server', socketServer)
 	const soupWorker = await createSoup()
-	console.log('soup worker', soupWorker)
 
 	const serverData: ServerData = {}
 
