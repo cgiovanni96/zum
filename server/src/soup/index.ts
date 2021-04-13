@@ -3,11 +3,6 @@ import { Worker } from 'mediasoup/lib/Worker'
 import createSoup from './createSoup'
 import { Rooms } from './utils/Room'
 
-export type WorkerAndRouterMap = {
-	worker: Worker
-	router: Router
-}
-
 const rooms: Rooms = {}
 
 const main = async () => {

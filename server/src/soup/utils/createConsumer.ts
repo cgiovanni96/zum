@@ -6,15 +6,12 @@ import {
 	RtpParameters,
 	Transport
 } from 'mediasoup/lib/types'
-import Peer from './Peer'
 
 export const createConsumer = async (
 	router: Router,
 	producer: Producer,
 	rtpCapabilities: RtpCapabilities,
-	transport: Transport,
-	peerId: string,
-	peerConsuming: Peer
+	transport: Transport
 ): Promise<Consumer> => {
 	if (!router.canConsume({ producerId: producer.id, rtpCapabilities })) {
 		throw new Error(
@@ -25,8 +22,7 @@ export const createConsumer = async (
 	const consumer = await transport.consume({
 		producerId: producer.id,
 		rtpCapabilities,
-		paused: false, // see note above about always starting paused
-		appData: { peerId, mediaPeerId: producer.appData.peerId }
+		paused: false // see note above about always starting paused
 	})
 
 	// consumer.on("transportclose", () => {
@@ -38,29 +34,23 @@ export const createConsumer = async (
 	//   closeConsumer(consumer, peerConsuming);
 	// });
 
-	peerConsuming.consumers.push(consumer)
+	// peerConsuming.consumers.push(consumer)
 
 	return {
-		peerId: producer.appData.peerId,
-		consumerParameters: {
-			producerId: producer.id,
-			id: consumer.id,
-			kind: consumer.kind,
-			rtpParameters: consumer.rtpParameters,
-			type: consumer.type,
-			producerPaused: consumer.producerPaused
-		}
+		producerId: producer.id,
+		id: consumer.id,
+		kind: consumer.kind,
+		rtpParameters: consumer.rtpParameters,
+		type: consumer.type,
+		producerPaused: consumer.producerPaused
 	}
 }
 
 export interface Consumer {
-	peerId: string
-	consumerParameters: {
-		producerId: string
-		id: string
-		kind: string
-		rtpParameters: RtpParameters
-		type: ConsumerType
-		producerPaused: boolean
-	}
+	producerId: string
+	id: string
+	kind: string
+	rtpParameters: RtpParameters
+	type: ConsumerType
+	producerPaused: boolean
 }

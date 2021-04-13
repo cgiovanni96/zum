@@ -1,33 +1,32 @@
 import * as mediasoup from 'mediasoup'
 import { Router, Worker } from 'mediasoup/lib/types'
-import os from 'os'
-import { config } from './config'
+import config from './config'
 
-const createSoup = async () => {
-	const workers: Array<{
-		worker: Worker
-		router: Router
-	}> = []
-	for (let i = 0; i < Object.keys(os.cpus()).length; i++) {
-		let worker = await mediasoup.createWorker({
-			logLevel: config.mediasoup.worker.logLevel,
-			logTags: config.mediasoup.worker.logTags,
-			rtcMinPort: config.mediasoup.worker.rtcMinPort,
-			rtcMaxPort: config.mediasoup.worker.rtcMaxPort
-		})
+export type Soup = {
+	worker: Worker
+	router: Router
+}
 
-		worker.on('died', () => {
-			console.error('mediasoup worker died (this should never happen)')
-			process.exit(1)
-		})
+const createSoup = async (): Promise<Soup> => {
+	let worker = await mediasoup.createWorker({
+		logLevel: config.mediasoup.worker.logLevel,
+		logTags: config.mediasoup.worker.logTags,
+		rtcMinPort: config.mediasoup.worker.rtcMinPort,
+		rtcMaxPort: config.mediasoup.worker.rtcMaxPort
+	})
 
-		const mediaCodecs = config.mediasoup.router.mediaCodecs
-		const router = await worker.createRouter({ mediaCodecs })
+	worker.on('died', () => {
+		console.error('mediasoup worker died (this should never happen)')
+		process.exit(1)
+	})
 
-		workers.push({ worker, router })
+	const mediaCodecs = config.mediasoup.router.mediaCodecs
+	const router = await worker.createRouter({ mediaCodecs })
+
+	return {
+		worker,
+		router
 	}
-
-	return workers
 }
 
 export default createSoup

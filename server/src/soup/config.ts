@@ -1,11 +1,11 @@
 import { mediaCodecs } from './mediaCodecs'
 import { TransportListenIp, WorkerLogTag } from 'mediasoup/lib/types'
 
-export const config = {
+const config = {
 	// http server ip, port, and peer timeout constant
 	//
 	httpIp: '0.0.0.0',
-	httpPort: 3000,
+	httpPort: 5000,
 	httpPeerStale: 360000,
 
 	mediasoup: {
@@ -47,3 +47,5 @@ export const config = {
 		}
 	}
 } as const
+
+export default config

@@ -1,5 +1,5 @@
 import { Router, WebRtcTransport } from 'mediasoup/lib/types'
-import { config } from '../config'
+import config from '../config'
 
 export const transportToOptions = ({
 	id,
@@ -10,7 +10,7 @@ export const transportToOptions = ({
 
 export type TransportOptions = ReturnType<typeof transportToOptions>
 
-export const createTransport = async (router: Router, peerId: string) => {
+export const createTransport = async (router: Router, peerId?: string) => {
 	const {
 		listenIps,
 		initialAvailableOutgoingBitrate
