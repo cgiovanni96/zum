@@ -8,13 +8,14 @@
 		"start": "next start"
 	},
 	"dependencies": {
+		"mediasoup-client": "3",
 		"next": "10.1.3",
 		"react": "17.0.2",
-		"react-dom": "17.0.2"
+		"react-dom": "17.0.2",
+		"socket.io-client": "^4.0.1"
 	},
 	"devDependencies": {
 		"@types/react": "^17.0.3",
-		"typescript": "^4.2.4",
 		"@typescript-eslint/eslint-plugin": "^4.8.2",
 		"@typescript-eslint/parser": "^4.8.2",
 		"eslint": "^7.14.0",
@@ -26,6 +27,7 @@
 		"eslint-plugin-promise": "4",
 		"eslint-plugin-react": "^7.21.5",
 		"eslint-plugin-standard": "4",
-		"prettier": "^2.2.0"
+		"prettier": "^2.2.0",
+		"typescript": "^4.2.4"
 	}
 }

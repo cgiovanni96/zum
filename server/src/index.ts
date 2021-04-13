@@ -59,9 +59,9 @@ const main = async () => {
 		console.log('client connected')
 
 		// inform the client about existence of producer
-		// if (producer) {
-		// 	socket.emit('newProducer')
-		// }
+		if (serverData.producer) {
+			socket.emit('newProducer')
+		}
 
 		socket.on('disconnect', () => {
 			console.log('client disconnected')
