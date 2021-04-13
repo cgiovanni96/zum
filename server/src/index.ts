@@ -73,6 +73,7 @@ const main = async () => {
 
 		socket.on('getRouterRtpCapabilities', (_, callback) => {
 			callback(soupWorker.router.rtpCapabilities)
+			// return soupWorker.router.rtpCapabilities
 		})
 
 		socket.on('createProducerTransport', async (_, callback) => {
