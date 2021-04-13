@@ -10,10 +10,10 @@
 		"prettier/prettier": 2,
 		"no-tabs": "off",
 		"@typescript-eslint/indent": "off",
-		"comma-dangle": "off",
-		"no-void": "off",
-		"@typescript-eslint/strict-boolean-expressions": "off",
-		"@typescript-eslint/space-before-function-paren": "off",
-		"@typescript-eslint/return-await": "off"
+		"comma-dangle": "off"
+		// "no-void": "off",
+		// "@typescript-eslint/strict-boolean-expressions": "off",
+		// "@typescript-eslint/space-before-function-paren": "off"
+		// "@typescript-eslint/return-await": "off"
 	}
 }

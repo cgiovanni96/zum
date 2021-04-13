@@ -11,6 +11,7 @@
 		"start": "ts-node-dev src/index.ts"
 	},
 	"devDependencies": {
+		"@types/connect": "^3.4.34",
 		"@types/connect-redis": "^0.0.16",
 		"@types/cors": "^2.8.9",
 		"@types/faker": "^5.1.5",
@@ -45,6 +46,7 @@
 		"ioredis": "^4.19.4",
 		"mediasoup": "^3.7.1",
 		"mercurius": "^7.4.0",
+		"middie": "^5.2.0",
 		"pg": "^8.5.1",
 		"redis": "^3.0.2",
 		"reflect-metadata": "^0.1.13",
