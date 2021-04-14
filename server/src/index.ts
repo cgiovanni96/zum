@@ -80,7 +80,15 @@ const main = async () => {
 			try {
 				const transport = await createTransport(soupWorker.router)
 				serverData.producerTransport = transport
-				callback(transport.appData)
+
+				const params = {
+					id: transport.id,
+					iceParameters: transport.iceParameters,
+					iceCandidates: transport.iceCandidates,
+					dtlsParameters: transport.dtlsParameters
+				}
+
+				callback(params)
 			} catch (err) {
 				console.error(err)
 				callback({ error: err.message })
@@ -91,7 +99,13 @@ const main = async () => {
 			try {
 				const transport = await createTransport(soupWorker.router)
 				serverData.consumerTransport = transport
-				callback(transport.appData)
+				const params = {
+					id: transport.id,
+					iceParameters: transport.iceParameters,
+					iceCandidates: transport.iceCandidates,
+					dtlsParameters: transport.dtlsParameters
+				}
+				callback(params)
 			} catch (err) {
 				console.error(err)
 				callback({ error: err.message })
@@ -111,6 +125,7 @@ const main = async () => {
 				await serverData.consumerTransport.connect({
 					dtlsParameters: data.dtlsParameters
 				})
+
 			callback()
 		})
 
@@ -122,9 +137,9 @@ const main = async () => {
 				rtpParameters
 			})
 			callback({ id: serverData.producer.id })
+			socket.broadcast.emit('newProducer')
 
 			// inform clients about new producer
-			socket.broadcast.emit('newProducer')
 		})
 
 		socket.on('consume', async (_, callback) => {
@@ -152,7 +167,9 @@ const main = async () => {
 		})
 
 		socket.on('resume', async (_, callback) => {
-			if (!serverData.consumer) return
+			if (!serverData.consumer) {
+				return
+			}
 			await serverData.consumer.resume()
 			callback()
 		})
