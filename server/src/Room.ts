@@ -11,7 +11,7 @@ import {
 	WebRtcTransport
 } from 'mediasoup/lib/WebRtcTransport'
 import { Worker } from 'mediasoup/lib/Worker'
-import { Socket } from 'socket.io'
+import { Server } from 'socket.io'
 
 import config from './soup/config'
 import Peer from './Peer'
@@ -26,9 +26,9 @@ export default class Room {
 	id: string
 	router: Router
 	peers: Map<string, Peer>
-	io: Socket
+	io: Server
 
-	constructor(room_id: string, worker: Worker, io: Socket) {
+	constructor(room_id: string, worker: Worker, io: Server) {
 		this.id = room_id
 		this.peers = new Map<string, Peer>()
 		this.io = io

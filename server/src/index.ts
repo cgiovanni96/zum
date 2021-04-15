@@ -1,19 +1,18 @@
-import mediasoup from 'mediasoup'
 import http from 'http'
 import express from 'express'
-import { Server } from 'socket.io'
+import { Server, Socket } from 'socket.io'
 
-import createSoup from './soup/createSoup'
+import createWorkers from './soup/createWorkers'
 import soupConfig from './soup/config'
-import { createTransport } from './soup/utils/createTransport'
-import { createConsumer } from './soup/utils/createConsumer'
+import Room from './Room'
+import getWorker from './soup/utils/getSoupWorker'
+import Peer from './Peer'
 
-type ServerData = {
-	producer?: mediasoup.types.Producer
-	consumer?: mediasoup.types.Consumer
-	producerTransport?: mediasoup.types.WebRtcTransport
-	consumerTransport?: mediasoup.types.WebRtcTransport
+export interface ExtendedSocket extends Socket {
+	roomId?: string
 }
+
+const roomList = new Map<string, Room>()
 
 const main = async () => {
 	// const { sslKey, sslCrt } = soupConfig
@@ -25,154 +24,170 @@ const main = async () => {
 	// 	cert: fs.readFileSync(sslCrt),
 	// 	key: fs.readFileSync(sslKey)
 	// }
+	const soupWorkers = await createWorkers()
+	let nextWorkerIdx = 0
 
 	const app = express()
 	app.use(express.json())
 	app.use(express.static(__dirname))
 
 	const webServer = http.createServer(app)
-	webServer.on('error', (err) => {
-		console.error('starting web server failed:', err.message)
+
+	const { httpIp, httpPort } = soupConfig
+	webServer.listen(httpPort, httpIp, () => {
+		const listenIps = soupConfig.mediasoup.webRtcTransport.listenIps[0]
+		const ip = listenIps.announcedIp || listenIps.ip
+		console.log('server is running')
+		console.log(`open https://${ip}:${httpPort} in your web browser`)
 	})
 
-	await new Promise((resolve) => {
-		const { httpIp, httpPort } = soupConfig
-		webServer.listen(httpPort, httpIp, () => {
-			const listenIps = soupConfig.mediasoup.webRtcTransport.listenIps[0]
-			const ip = listenIps.announcedIp || listenIps.ip
-			console.log('server is running')
-			console.log(`open https://${ip}:${httpPort} in your web browser`)
-			resolve(true)
-		})
-	})
-
-	const socketServer = new Server(webServer, {
+	const io = new Server(webServer, {
 		serveClient: false,
 		path: '/server'
 	})
 
-	const soupWorker = await createSoup()
-
-	const serverData: ServerData = {}
-
-	socketServer.on('connection', (socket) => {
+	io.on('connection', (socket: ExtendedSocket) => {
 		console.log('client connected')
 
-		// inform the client about existence of producer
-		if (serverData.producer) {
-			socket.emit('newProducer')
-		}
+		socket.on('createRoom', async ({ roomId }, cb) => {
+			if (!roomList.has(roomId)) {
+				console.log(`---created room--- ${roomId}`)
+				const worker = getWorker(soupWorkers, nextWorkerIdx)
+				roomList.set(roomId, new Room(roomId, worker, io))
+				cb(roomId)
+			} else cb('already exists')
+		})
+
+		socket.on('join', ({ roomId, name }, cb) => {
+			if (!roomList.has(roomId)) return cb({ error: 'room not found' })
+
+			roomList.get(roomId)?.addPeer(new Peer(socket.id, name))
+			socket.roomId = roomId
+
+			cb(roomList.get(roomId)?.toJson)
+		})
+
+		socket.on('getProducers', () => {
+			if (!socket.roomId) return
+			if (!roomList.has(socket.roomId)) return
+			const producerList = roomList.get(socket.roomId)?.getProducerListForPeer()
+
+			socket.emit('newProducers', producerList)
+		})
+
+		socket.on('getRouterCapabilities', (_, cb) => {
+			if (!socket.roomId) return
+			try {
+				cb(roomList.get(socket.roomId)?.getRtpCapabilities())
+			} catch (error) {
+				cb({ error: error.message })
+			}
+		})
+
+		socket.on('createTransport', async (_, cb) => {
+			if (!socket.roomId) return
+			try {
+				const webRtcParams = await roomList
+					.get(socket.roomId)
+					?.createWebRtcTranport(socket.roomId)
+
+				cb(webRtcParams?.params)
+			} catch (error) {
+				cb({ error: error.message })
+			}
+		})
+
+		socket.on(
+			'connectTransport',
+			async ({ transportId, dtlsParameters }, cb) => {
+				if (!socket.roomId || !roomList.has(socket.roomId)) return
+				await roomList
+					.get(socket.roomId)
+					?.connectPeerTransport(socket.id, transportId, dtlsParameters)
+
+				cb('success')
+			}
+		)
+
+		socket.on('produce', async ({ kind, rtpParameters, transportId }, cb) => {
+			if (!socket.roomId || !roomList.has(socket.roomId))
+				return cb({ error: 'not room' })
+
+			const producerId = await roomList
+				.get(socket.roomId)
+				?.produce(socket.id, transportId, rtpParameters, kind)
+
+			cb(producerId)
+		})
+
+		socket.on(
+			'consume',
+			async ({ transportId, producerId, rtpCapabilities, kind }, cb) => {
+				if (!socket.roomId || !roomList.has(socket.roomId))
+					return cb({ error: 'no room' })
+				const params = await roomList
+					.get(socket.roomId)
+					?.consume(socket.id, transportId, producerId, rtpCapabilities, kind)
+				if (!params) return cb({ error: 'something went wrong' })
+				cb(params)
+			}
+		)
+
+		socket.on('resume', async ({ peerId, transportId }, cb) => {
+			if (!socket.roomId || !roomList.has(socket.roomId))
+				return cb({ error: 'no room' })
+
+			await roomList
+				.get(socket.roomId)
+				?.peers.get(peerId)
+				?.consumers.get(transportId)
+				?.resume()
+
+			cb('resumed')
+		})
+
+		socket.on('getRoomInfo', (_, cb) => {
+			if (!socket.roomId || !roomList.has(socket.roomId))
+				return cb({ error: 'no room' })
+			cb(roomList.get(socket.roomId)?.toJson())
+		})
 
 		socket.on('disconnect', () => {
-			console.log('client disconnected')
+			if (!socket.roomId || !roomList.has(socket.roomId)) return
+			roomList.get(socket.roomId)?.removePeer(socket.id)
 		})
 
-		socket.on('connect_error', (err) => {
-			console.error('client connection error', err)
+		socket.on('producerClosed', ({ producerId }, cb) => {
+			if (!socket.roomId || !roomList.has(socket.roomId))
+				return cb({ error: 'no room' })
+			roomList.get(socket.roomId)?.closeProducer(socket.id, producerId)
 		})
 
-		socket.on('getRouterRtpCapabilities', (_, callback) => {
-			callback(soupWorker.router.rtpCapabilities)
-			// return soupWorker.router.rtpCapabilities
+		socket.on('exitRoom', async (_, cb) => {
+			if (!socket.roomId || !roomList.has(socket.roomId))
+				return cb({ error: 'no room' })
+
+			await roomList.get(socket.roomId)?.removePeer(socket.id)
+
+			if (roomList.get(socket.roomId)?.getPeers().size === 0)
+				roomList.delete(socket.roomId)
+
+			cb('success')
 		})
+	})
+}
 
-		socket.on('createProducerTransport', async (_, callback) => {
-			try {
-				const transport = await createTransport(soupWorker.router)
-				serverData.producerTransport = transport
-
-				const params = {
-					id: transport.id,
-					iceParameters: transport.iceParameters,
-					iceCandidates: transport.iceCandidates,
-					dtlsParameters: transport.dtlsParameters
+export const room = () => {
+	return Object.values(roomList).map((room: Room) => {
+		return {
+			id: room.id,
+			router: room.router.id,
+			peers: Object.values(room.peers).map((peer: Peer) => {
+				return {
+					name: peer.name
 				}
-
-				callback(params)
-			} catch (err) {
-				console.error(err)
-				callback({ error: err.message })
-			}
-		})
-
-		socket.on('createConsumerTransport', async (_, callback) => {
-			try {
-				const transport = await createTransport(soupWorker.router)
-				serverData.consumerTransport = transport
-				const params = {
-					id: transport.id,
-					iceParameters: transport.iceParameters,
-					iceCandidates: transport.iceCandidates,
-					dtlsParameters: transport.dtlsParameters
-				}
-				callback(params)
-			} catch (err) {
-				console.error(err)
-				callback({ error: err.message })
-			}
-		})
-
-		socket.on('connectProducerTransport', async (data, callback) => {
-			if (serverData.producerTransport)
-				await serverData.producerTransport.connect({
-					dtlsParameters: data.dtlsParameters
-				})
-			callback()
-		})
-
-		socket.on('connectConsumerTransport', async (data, callback) => {
-			if (serverData.consumerTransport)
-				await serverData.consumerTransport.connect({
-					dtlsParameters: data.dtlsParameters
-				})
-
-			callback()
-		})
-
-		socket.on('produce', async (data, callback) => {
-			const { kind, rtpParameters } = data
-			if (!serverData.producerTransport) return
-			serverData.producer = await serverData.producerTransport.produce({
-				kind,
-				rtpParameters
 			})
-			callback({ id: serverData.producer.id })
-			socket.broadcast.emit('newProducer')
-
-			// inform clients about new producer
-		})
-
-		socket.on('consume', async (_, callback) => {
-			if (
-				!serverData.producer ||
-				!serverData.producerTransport ||
-				!serverData.consumerTransport
-			)
-				return
-
-			serverData.consumer = await serverData.consumerTransport.consume({
-				producerId: serverData.producer.id,
-				rtpCapabilities: soupWorker.router.rtpCapabilities,
-				paused: serverData.producer.kind === 'video'
-			})
-
-			callback(
-				await createConsumer(
-					soupWorker.router,
-					serverData.producer,
-					soupWorker.router.rtpCapabilities,
-					serverData.producerTransport
-				)
-			)
-		})
-
-		socket.on('resume', async (_, callback) => {
-			if (!serverData.consumer) {
-				return
-			}
-			await serverData.consumer.resume()
-			callback()
-		})
+		}
 	})
 }
 

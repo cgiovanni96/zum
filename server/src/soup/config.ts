@@ -1,3 +1,4 @@
+import * as os from 'os'
 import { mediaCodecs } from './mediaCodecs'
 import { TransportListenIp, WorkerLogTag } from 'mediasoup/lib/types'
 
@@ -9,6 +10,7 @@ const config = {
 	httpPeerStale: 360000,
 
 	mediasoup: {
+		numWorkers: Object.keys(os.cpus()).length,
 		worker: {
 			rtcMinPort: 40000,
 			rtcMaxPort: 49999,
