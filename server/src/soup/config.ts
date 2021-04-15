@@ -43,7 +43,8 @@ const config = {
 				// { ip: "192.168.42.68", announcedIp: null },
 				// { ip: '10.10.23.101', announcedIp: null },
 			] as TransportListenIp[],
-			initialAvailableOutgoingBitrate: 800000
+			initialAvailableOutgoingBitrate: 800000,
+			maxIncomingBitrate: 1500000
 		}
 	}
 } as const
