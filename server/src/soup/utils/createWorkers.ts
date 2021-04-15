@@ -1,6 +1,6 @@
 import * as mediasoup from 'mediasoup'
 import { Worker } from 'mediasoup/lib/types'
-import config from './config'
+import config from '../config'
 
 const createWorkers = async (): Promise<Worker[]> => {
 	let workers: Worker[] = []
