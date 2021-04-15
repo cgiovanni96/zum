@@ -2,7 +2,7 @@ import http from 'http'
 import express from 'express'
 import { Server, Socket } from 'socket.io'
 
-import createWorkers from './soup/createWorkers'
+import createWorkers from './soup/utils/createWorkers'
 import soupConfig from './soup/config'
 import Room from './Room'
 import getWorker from './soup/utils/getSoupWorker'
