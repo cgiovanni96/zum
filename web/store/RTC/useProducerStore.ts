@@ -173,7 +173,12 @@ const useProducerStore = create<ProducerStore>((set, get) => {
 
 			roomStore.producers.set(producer.id, producer)
 
-			// TODO: set local video element
+			if (type !== MediaType.audio)
+				roomStore.personalStream = {
+					id: producer.id,
+					stream,
+					type: MediaType.video
+				}
 
 			producer.on('trackended', () => {
 				closeProducer(kind)
@@ -181,15 +186,13 @@ const useProducerStore = create<ProducerStore>((set, get) => {
 
 			producer.on('transportclose', () => {
 				console.log('producer transport close')
-				// TODO: stop tracks for the local video
-				if (type !== MediaType.audio) return
+				stopTrack(kind)
 				roomStore.producers.delete(producer.id)
 			})
 
 			producer.on('close', () => {
 				console.log('closing producer')
-				// TODO: stop tracks for the local video
-				if (type === MediaType.audio) return
+				stopTrack(kind)
 				roomStore.producers.delete(producer.id)
 			})
 		} catch (e) {
@@ -209,9 +212,14 @@ const useProducerStore = create<ProducerStore>((set, get) => {
 			roomStore.producers.delete(producerId)
 			get().producerLabel.delete(kind)
 
-			if (kind === MediaType.audio) {
-				//TODO: stop local video tracks
-			}
+			stopTrack(kind)
+		}
+	}
+
+	const stopTrack = (type: MediaType) => {
+		if (type !== MediaType.audio) {
+			roomStore.personalStream.stream.getTracks().forEach((track) => track.stop)
+			roomStore.personalStream = null
 		}
 	}
 

@@ -1,3 +1,4 @@
+import { RoomStream } from './../useRoomStore'
 import { Consumer } from 'mediasoup-client/lib/Consumer'
 import { Transport, TransportOptions } from 'mediasoup-client/lib/Transport'
 import create from 'zustand'
@@ -55,11 +56,12 @@ const useConsumerStore = create<ConsumerStore>((set, get) => {
 
 		roomStore.consumers.set(consumer.id, consumer)
 
-		if (kind === MediaType.video) {
-			// TODO: create remote video
-		} else {
-			// TODO: create remote audio
-		}
+		const newRemoteStreams: RoomStream = { id: consumer.id, stream, type: null }
+
+		newRemoteStreams.type =
+			kind === MediaType.video ? MediaType.video : MediaType.audio
+
+		roomStore.remoteStreams.push(newRemoteStreams)
 
 		consumer.on('trackended', () => {
 			removeConsumer(consumer.id)
@@ -101,7 +103,12 @@ const useConsumerStore = create<ConsumerStore>((set, get) => {
 	}
 
 	const removeConsumer = (consumerId: string) => {
-		//TODO: remove consumer element
+		const id = Number(consumerId)
+		const stream = roomStore.remoteStreams[id].stream
+
+		stream.getTracks().forEach((track) => track.stop())
+		roomStore.remoteStreams[id] = null
+
 		roomStore.consumers.delete(consumerId)
 	}
 

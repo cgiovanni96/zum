@@ -1,6 +1,6 @@
 import { Consumer } from 'mediasoup-client/lib/Consumer'
 import { Producer } from 'mediasoup-client/lib/Producer'
-import { RtpCapabilities } from 'mediasoup-client/lib/RtpParameters'
+import { MediaKind, RtpCapabilities } from 'mediasoup-client/lib/RtpParameters'
 import create from 'zustand'
 import useConsumerStore from './RTC/useConsumerStore'
 import useProducerStore from './RTC/useProducerStore'
@@ -8,11 +8,19 @@ import useRtcStore from './RTC/useRtcStore'
 import useDeviceStore from './useDeviceStore'
 import useSocketStore from './useSocketStore'
 
+export type RoomStream = {
+	id: string
+	type: MediaKind
+	stream: MediaStream
+}
+
 type RoomState = {
 	id: string
 	name: string
 	consumers?: Map<string, Consumer>
 	producers?: Map<string, Producer>
+	personalStream: RoomStream
+	remoteStreams: RoomStream[]
 	initializeRoom: (id: string, name: string) => void
 	exit: (offline: boolean) => void
 }
@@ -72,7 +80,14 @@ const useRoomStore = create<RoomState>((set) => {
 		clean()
 	}
 
-	return { id: '', name: '', initializeRoom, exit }
+	return {
+		id: '',
+		name: '',
+		personalStream: null,
+		remoteStreams: [],
+		initializeRoom,
+		exit
+	}
 })
 
 export default useRoomStore

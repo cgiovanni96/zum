@@ -2,10 +2,21 @@
 // import { Producer } from 'mediasoup-client/lib/Producer'
 
 import React, { useEffect, useState } from 'react'
+import useRoomStore from '../store/useRoomStore'
 
 const Room2: React.FC = () => {
+	const [userName, setUserName] = useState<string>('')
+	const roomStore = useRoomStore()
+
+	useEffect(() => {
+		setUserName(`nassarolo-${Math.round(Math.random() * 1000)}`)
+		roomStore.initializeRoom('123', 'nassa')
+	}, [])
+
 	return (
 		<>
+			<span>{userName} </span>
+
 			<div id="videoMedia" className="hidden">
 				<h2>------local------</h2>
 				<div id="localMedia"></div>
@@ -19,3 +30,5 @@ const Room2: React.FC = () => {
 		</>
 	)
 }
+
+export default Room2
