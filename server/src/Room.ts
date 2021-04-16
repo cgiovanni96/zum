@@ -92,7 +92,7 @@ export default class Room {
 
 		console.log(`---adding tranport---${transport.id}`)
 
-		this.peers.get(socketId)?.addTransport(transport)
+		await this.peers.get(socketId)?.addTransport(transport)
 
 		return {
 			params: {

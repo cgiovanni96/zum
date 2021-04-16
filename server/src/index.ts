@@ -76,6 +76,7 @@ const main = async () => {
 		})
 
 		socket.on('getRouterCapabilities', (_, cb) => {
+			console.log('hello')
 			if (!socket.roomId) return
 			try {
 				cb(roomList.get(socket.roomId)?.getRtpCapabilities())
@@ -89,7 +90,7 @@ const main = async () => {
 			try {
 				const webRtcParams = await roomList
 					.get(socket.roomId)
-					?.createWebRtcTranport(socket.roomId)
+					?.createWebRtcTranport(socket.id)
 
 				cb(webRtcParams?.params)
 			} catch (error) {
@@ -113,9 +114,22 @@ const main = async () => {
 			if (!socket.roomId || !roomList.has(socket.roomId))
 				return cb({ error: 'not room' })
 
-			const producerId = await roomList
-				.get(socket.roomId)
-				?.produce(socket.id, transportId, rtpParameters, kind)
+			console.log('serveProducing')
+
+			// const producerId = await roomList
+			// 	.get(socket.roomId)
+			// 	?.produce(socket.id, transportId, rtpParameters, kind)
+
+			const room = roomList.get(socket.roomId)
+
+			const producerId = await room?.produce(
+				socket.id,
+				transportId,
+				rtpParameters,
+				kind
+			)
+
+			console.log('producerId', producerId)
 
 			cb(producerId)
 		})

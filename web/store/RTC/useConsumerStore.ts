@@ -21,26 +21,24 @@ type ConsumerStore = {
 }
 
 const useConsumerStore = create<ConsumerStore>((set, get) => {
-	const roomStore = useRoomStore()
-	const device = useDeviceStore((state) => state.device)
-	const socketStore = useSocketStore()
-
 	const initConsumerTransport = async () => {
-		const data = await socketStore.request<TransportOptions>(
-			RequestType.createTransport,
-			{
+		const data = await useSocketStore
+			.getState()
+			.request<TransportOptions>(RequestType.createTransport, {
 				forceTcp: false
-			}
-		)
+			})
 
 		set(() => ({
-			consumerTransport: device.createRecvTransport(data)
+			consumerTransport: useDeviceStore
+				.getState()
+				.device.createRecvTransport(data)
 		}))
 
 		get().consumerTransport.on(
 			RequestType.connect,
 			({ dtlsParameters }: DtlsArgs, cb, errBack) => {
-				socketStore
+				useSocketStore
+					.getState()
 					.request(RequestType.connectTransport, {
 						transportId: get().consumerTransport.id,
 						dtlsParameters
@@ -54,14 +52,14 @@ const useConsumerStore = create<ConsumerStore>((set, get) => {
 	const consume = async (producerId: string) => {
 		const { consumer, stream, kind } = await getConsumeStream(producerId)
 
-		roomStore.consumers.set(consumer.id, consumer)
+		useRoomStore.getState().consumers.set(consumer.id, consumer)
 
 		const newRemoteStreams: RoomStream = { id: consumer.id, stream, type: null }
 
 		newRemoteStreams.type =
 			kind === MediaType.video ? MediaType.video : MediaType.audio
 
-		roomStore.remoteStreams.push(newRemoteStreams)
+		useRoomStore.getState().remoteStreams.push(newRemoteStreams)
 
 		consumer.on('trackended', () => {
 			removeConsumer(consumer.id)
@@ -75,16 +73,15 @@ const useConsumerStore = create<ConsumerStore>((set, get) => {
 	const getConsumeStream = async (
 		producerId: string
 	): Promise<GetConsumeData> => {
-		const { rtpCapabilities } = device
+		const { rtpCapabilities } = useDeviceStore.getState().device
 
-		const data: ConsumeData = await socketStore.request<ConsumeData>(
-			'consume',
-			{
+		const data: ConsumeData = await useSocketStore
+			.getState()
+			.request<ConsumeData>('consume', {
 				rtpCapabilities,
 				transportId: get().consumerTransport.id,
 				producerId
-			}
-		)
+			})
 
 		const { id, kind, rtpParameters } = data
 
@@ -104,12 +101,12 @@ const useConsumerStore = create<ConsumerStore>((set, get) => {
 
 	const removeConsumer = (consumerId: string) => {
 		const id = Number(consumerId)
-		const stream = roomStore.remoteStreams[id].stream
+		const stream = useRoomStore.getState().remoteStreams[id].stream
 
 		stream.getTracks().forEach((track) => track.stop())
-		roomStore.remoteStreams[id] = null
+		useRoomStore.getState().remoteStreams[id] = null
 
-		roomStore.consumers.delete(consumerId)
+		useRoomStore.getState().consumers.delete(consumerId)
 	}
 
 	return {

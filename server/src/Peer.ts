@@ -30,6 +30,7 @@ export default class Peer {
 
 	async connectTransport(transportId: string, dtlsParameters: DtlsParameters) {
 		if (!this.transports.has(transportId)) return
+		console.log('connectino transport')
 		await this.transports.get(transportId)?.connect({ dtlsParameters })
 	}
 

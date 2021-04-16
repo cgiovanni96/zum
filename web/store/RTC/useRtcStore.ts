@@ -8,12 +8,9 @@ type RtcStore = {
 }
 
 const useRtcStore = create<RtcStore>(() => {
-	const producerStore = useProducerStore()
-	const consumerStore = useConsumerStore()
-
 	const initTransports = async () => {
-		await producerStore.initProducerTransport()
-		await consumerStore.initConsumerTransport()
+		await useProducerStore.getState().initProducerTransport()
+		await useConsumerStore.getState().initConsumerTransport()
 	}
 
 	return {

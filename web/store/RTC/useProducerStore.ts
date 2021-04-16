@@ -14,30 +14,28 @@ type ProducerStore = {
 }
 
 const useProducerStore = create<ProducerStore>((set, get) => {
-	const socketStore = useSocketStore()
-	const device = useDeviceStore((state) => state.device)
-	const roomStore = useRoomStore()
-
 	const initProducerTransport = async () => {
-		const data = await socketStore.request<TransportOptions>(
-			RequestType.createTransport,
-			{
+		const data = await useSocketStore
+			.getState()
+			.request<TransportOptions>(RequestType.createTransport, {
 				forceTcp: false,
-				rtpCapabilities: device.rtpCapabilities
-			}
-		)
+				rtpCapabilities: useDeviceStore.getState().device.rtpCapabilities
+			})
 
 		set(() => ({
-			producerTransport: device.createSendTransport(data)
+			producerTransport: useDeviceStore
+				.getState()
+				.device.createSendTransport(data)
 		}))
 
 		get().producerTransport.on(
 			'connect',
 			({ dtlsParameters }: DtlsArgs, cb, errBack) => {
-				socketStore
+				useSocketStore
+					.getState()
 					.request(RequestType.connectTransport, {
-						dtlsParameters,
-						transportId: data.id
+						transportId: data.id,
+						dtlsParameters
 					})
 					.then(cb)
 					.catch(errBack)
@@ -45,17 +43,17 @@ const useProducerStore = create<ProducerStore>((set, get) => {
 		)
 
 		get().producerTransport.on(
-			RequestType.produceTransport,
+			'produce',
 			async ({ kind, rtpParameters }: ProduceTransportArgs, cb, errBack) => {
+				console.log('producing')
 				try {
-					const data = await socketStore.request<{ producerId: string }>(
-						RequestType.produceTransport,
-						{
+					const data = await useSocketStore
+						.getState()
+						.request<{ producerId: string }>(RequestType.produceTransport, {
 							transportId: get().producerTransport.id,
 							kind,
 							rtpParameters
-						}
-					)
+						})
 					cb({ id: data.producerId })
 				} catch (error) {
 					errBack(error)
@@ -118,14 +116,19 @@ const useProducerStore = create<ProducerStore>((set, get) => {
 				return
 		}
 
-		if (device.canProduce(MediaType.video) && type === MediaType.video) {
-			console.error('cannot produce video')
-			return
-		}
-		if (get().producerLabel.has(type)) {
-			console.warn(`producer already already exists for this type ${type}`)
-			return
-		}
+		// FIXME: device and producerLabel are null here - why??
+
+		// if (
+		// 	useDeviceStore.getState().device.canProduce(MediaType.video) &&
+		// 	type === MediaType.video
+		// ) {
+		// 	console.error('cannot produce video')
+		// 	return
+		// }
+		// if (get().producerLabel.has(type)) {
+		// 	console.warn(`producer already already exists for this type ${type}`)
+		// 	return
+		// }
 
 		console.log('mediaconstraint: ', mediaConstraints)
 		let stream: MediaStream
@@ -142,6 +145,7 @@ const useProducerStore = create<ProducerStore>((set, get) => {
 					? stream.getAudioTracks()[0]
 					: stream.getVideoTracks()[0]
 
+			console.log('track', track)
 			const params: ProducerOptions = { track }
 			if (type === MediaType.video) {
 				params.encodings = [
@@ -169,16 +173,13 @@ const useProducerStore = create<ProducerStore>((set, get) => {
 
 			const producer: Producer = await get().producerTransport.produce(params)
 
-			console.log('producer', producer)
+			useRoomStore.getState().producers.set(producer.id, producer)
 
-			roomStore.producers.set(producer.id, producer)
-
-			if (type !== MediaType.audio)
-				roomStore.personalStream = {
-					id: producer.id,
-					stream,
-					type: MediaType.video
-				}
+			if (type !== MediaType.audio) {
+				console.log('video type')
+				useRoomStore.getState().setPersonalStream(producer.id, stream, 'video')
+				console.log('personal Stream', useRoomStore.getState().personalStream)
+			}
 
 			producer.on('trackended', () => {
 				closeProducer(kind)
@@ -187,13 +188,13 @@ const useProducerStore = create<ProducerStore>((set, get) => {
 			producer.on('transportclose', () => {
 				console.log('producer transport close')
 				stopTrack(kind)
-				roomStore.producers.delete(producer.id)
+				useRoomStore.getState().producers.delete(producer.id)
 			})
 
 			producer.on('close', () => {
 				console.log('closing producer')
 				stopTrack(kind)
-				roomStore.producers.delete(producer.id)
+				useRoomStore.getState().producers.delete(producer.id)
 			})
 		} catch (e) {
 			console.error(e)
@@ -207,9 +208,9 @@ const useProducerStore = create<ProducerStore>((set, get) => {
 			const producerId = get().producerLabel.get(kind)
 			console.log('producerId: ', producerId)
 
-			socketStore.socket.emit('producerClosed', { producerId })
-			roomStore.producers.get(producerId).close()
-			roomStore.producers.delete(producerId)
+			useSocketStore.getState().socket.emit('producerClosed', { producerId })
+			useRoomStore.getState().producers.get(producerId).close()
+			useRoomStore.getState().producers.delete(producerId)
 			get().producerLabel.delete(kind)
 
 			stopTrack(kind)
@@ -218,14 +219,17 @@ const useProducerStore = create<ProducerStore>((set, get) => {
 
 	const stopTrack = (type: MediaType) => {
 		if (type !== MediaType.audio) {
-			roomStore.personalStream.stream.getTracks().forEach((track) => track.stop)
-			roomStore.personalStream = null
+			useRoomStore
+				.getState()
+				.personalStream.stream.getTracks()
+				.forEach((track) => track.stop)
+			useRoomStore.getState().personalStream = null
 		}
 	}
 
 	return {
 		producerTransport: null,
-		producerLabel: null,
+		producerLabel: new Map<string, string>(),
 		initProducerTransport,
 		produce
 	}

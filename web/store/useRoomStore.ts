@@ -17,21 +17,16 @@ export type RoomStream = {
 type RoomState = {
 	id: string
 	name: string
-	consumers?: Map<string, Consumer>
-	producers?: Map<string, Producer>
+	consumers: Map<string, Consumer>
+	producers: Map<string, Producer>
 	personalStream: RoomStream
 	remoteStreams: RoomStream[]
+	setPersonalStream: (id: string, stream: MediaStream, type: MediaKind) => void
 	initializeRoom: (id: string, name: string) => void
 	exit: (offline: boolean) => void
 }
 
 const useRoomStore = create<RoomState>((set) => {
-	const socketStore = useSocketStore()
-	const deviceStore = useDeviceStore()
-	const rtcStore = useRtcStore()
-	const consumerStore = useConsumerStore()
-	const producerStore = useProducerStore()
-
 	const initializeRoom = async (id: string, name: string) => {
 		set(() => ({ id, name }))
 		await createRoom(id)
@@ -40,22 +35,22 @@ const useRoomStore = create<RoomState>((set) => {
 
 	const createRoom = async (roomId: string) => {
 		try {
-			await socketStore.request('createRoom', { roomId })
+			await useSocketStore.getState().request('createRoom', { roomId })
 		} catch (e) {
 			console.error(e)
 		}
 	}
 
-	const join = async (id: string, name: string) => {
+	const join = async (roomId: string, name: string) => {
 		try {
-			await socketStore.request('join', { name, id })
-			const data = await socketStore.request<RtpCapabilities>(
-				'getRouterRtpCapabilities',
-				{}
-			)
-			await deviceStore.loadDevice(data)
-			await rtcStore.initTransports()
-			socketStore.socket.emit('getProducers')
+			await useSocketStore.getState().request('join', { roomId, name })
+
+			const data = await useSocketStore
+				.getState()
+				.request<RtpCapabilities>('getRouterCapabilities', {})
+			await useDeviceStore.getState().loadDevice(data)
+			await useRtcStore.getState().initTransports()
+			useSocketStore.getState().socket.emit('getProducers')
 		} catch (error) {
 			console.error(error)
 		}
@@ -63,16 +58,16 @@ const useRoomStore = create<RoomState>((set) => {
 
 	const exit = async (offline = false) => {
 		const clean = () => {
-			consumerStore.consumerTransport.close()
-			producerStore.producerTransport.close()
-			socketStore.socket.off('disconnect')
-			socketStore.socket.off('newProducers')
-			socketStore.socket.off('consumerClosed')
+			useConsumerStore.getState().consumerTransport.close()
+			useProducerStore.getState().producerTransport.close()
+			useSocketStore.getState().socket.off('disconnect')
+			useSocketStore.getState().socket.off('newProducers')
+			useSocketStore.getState().socket.off('consumerClosed')
 		}
 
 		if (!offline) {
 			try {
-				await socketStore.request('exitRoom', {})
+				await useSocketStore.getState().request('exitRoom', {})
 			} catch (e) {
 				console.error(e)
 			}
@@ -80,11 +75,28 @@ const useRoomStore = create<RoomState>((set) => {
 		clean()
 	}
 
+	const setPersonalStream = (
+		id: string,
+		stream: MediaStream,
+		type: MediaKind
+	) => {
+		set(() => ({
+			personalStream: {
+				id,
+				stream,
+				type
+			}
+		}))
+	}
+
 	return {
 		id: '',
 		name: '',
+		producers: new Map<string, Producer>(),
+		consumers: new Map<string, Consumer>(),
 		personalStream: null,
 		remoteStreams: [],
+		setPersonalStream,
 		initializeRoom,
 		exit
 	}

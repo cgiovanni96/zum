@@ -10,7 +10,17 @@ type DeviceStore = {
 const useDeviceStore = create<DeviceStore>((set, get) => ({
 	device: null,
 	loadDevice: async (RtpCapabilities: RtpCapabilities) => {
-		await get().device.load({ routerRtpCapabilities: RtpCapabilities })
+		const newDevice = new Device()
+		try {
+			await newDevice.load({
+				routerRtpCapabilities: RtpCapabilities
+			})
+		} catch (e) {
+			console.log('not supported', e)
+		}
+
+		set(() => ({ device: newDevice }))
+		console.log('device loaded', get().device)
 	}
 }))
 

@@ -9,7 +9,7 @@ export enum MediaType {
 }
 
 export enum RequestType {
-	createTransport = 'createWebRtcTransport',
+	createTransport = 'createTransport',
 	connectTransport = 'connectTransport',
 	produceTransport = 'produce',
 	connectionChange = 'connectionstatechange',
