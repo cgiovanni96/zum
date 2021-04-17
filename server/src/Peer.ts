@@ -25,12 +25,13 @@ export default class Peer {
 	}
 
 	addTransport(transport: Transport) {
+		console.log('--- addTransport')
 		this.transports.set(transport.id, transport)
 	}
 
 	async connectTransport(transportId: string, dtlsParameters: DtlsParameters) {
+		console.log('--- connectTransport')
 		if (!this.transports.has(transportId)) return
-		console.log('connectino transport')
 		await this.transports.get(transportId)?.connect({ dtlsParameters })
 	}
 
@@ -39,6 +40,7 @@ export default class Peer {
 		rtpParameters: RtpParameters,
 		kind: MediaKind
 	): Promise<Producer | undefined> {
+		console.log('--- createProducer')
 		const producer = await this.transports
 			.get(transportId)
 			?.produce({ kind, rtpParameters })
@@ -49,7 +51,7 @@ export default class Peer {
 
 		producer.on('transportclose', () => {
 			console.log(
-				`---producer transport clonse --- name: ${this.name} producer_id: ${producer.id}`
+				`---producer transport close --- name: ${this.name} producer_id: ${producer.id}`
 			)
 			producer.close()
 			this.producers.delete(producer.id)
@@ -64,6 +66,7 @@ export default class Peer {
 		rtpCapabilities: RtpCapabilities,
 		kind: MediaKind
 	): Promise<CreateConsumer | undefined> {
+		console.log('--- createConsumer')
 		const consumerTransport = this.transports.get(transportId)
 		if (!consumerTransport) return
 
@@ -86,7 +89,7 @@ export default class Peer {
 
 		consumer.on('transportclose', () => {
 			console.log(
-				`--- consumer transport close --- name: ${this.name} consumer_id: ${consumer.id}`
+				`--- transportclose --- name: ${this.name} consumer_id: ${consumer.id}`
 			)
 			consumer.close()
 			this.consumers.delete(consumer.id)
@@ -106,6 +109,7 @@ export default class Peer {
 	}
 
 	closeProducer(producerId: string) {
+		console.log('--- closeProducer')
 		try {
 			this.producers.get(producerId)?.close()
 		} catch (error) {
@@ -115,14 +119,17 @@ export default class Peer {
 	}
 
 	getProducer(producerId: string): Producer | undefined {
+		console.log('--- getProducer')
 		return this.producers.get(producerId)
 	}
 
 	close() {
+		console.log('--- close')
 		this.transports.forEach((transport) => transport.close())
 	}
 
 	removeConsumer(consumerId: string) {
+		console.log('--- removeConsumer')
 		this.consumers.delete(consumerId)
 	}
 }

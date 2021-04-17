@@ -12,7 +12,18 @@ const Media: React.FC<MediaProps> = ({ media }) => {
 		ref.current.srcObject = media.stream
 	}, [])
 
-	return <>{ref && <video ref={ref} autoPlay playsInline />}</>
+	return (
+		<>
+			{ref && (
+				<video
+					style={{ width: '200px', height: '200px' }}
+					ref={ref}
+					autoPlay
+					playsInline
+				/>
+			)}
+		</>
+	)
 }
 
 export default Media

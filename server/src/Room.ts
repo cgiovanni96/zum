@@ -36,16 +36,19 @@ export default class Room {
 	}
 
 	async getRouter(worker: Worker): Promise<Router> {
+		console.log('--- getRouter ')
 		const codecs: RtpCodecCapability[] = config.mediasoup.router.mediaCodecs
 		const router: Router = await worker.createRouter({ mediaCodecs: codecs })
 		return router
 	}
 
 	addPeer(peer: Peer) {
+		console.log('--- addPeer')
 		this.peers.set(peer.id, peer)
 	}
 
 	getProducerListForPeer(): ProducerList {
+		console.log('--- getProducerList')
 		const producerList: ProducerList = []
 		this.peers.forEach((peer) => {
 			peer.producers.forEach((producer) => {
@@ -57,10 +60,12 @@ export default class Room {
 	}
 
 	getRtpCapabilities(): RtpCapabilities {
+		console.log('--- getRtpCapabilities')
 		return this.router.rtpCapabilities
 	}
 
 	async createWebRtcTranport(socketId: string): Promise<WebRtcTranportParams> {
+		console.log('--- createWebRtcTranport')
 		const {
 			initialAvailableOutgoingBitrate,
 			maxIncomingBitrate,
@@ -109,6 +114,7 @@ export default class Room {
 		transportId: string,
 		dtlsParameters: DtlsParameters
 	) {
+		console.log('--- connectPeerTransport ')
 		if (!this.peers.has(socketId)) return
 		await this.peers
 			.get(socketId)
@@ -121,6 +127,7 @@ export default class Room {
 		rtpParameters: RtpParameters,
 		kind: MediaKind
 	) {
+		console.log('--- produce')
 		return new Promise(async (resolve, reject) => {
 			const producer = await this.peers
 				.get(socketId)
@@ -147,6 +154,7 @@ export default class Room {
 		rtpCapabilities: RtpCapabilities,
 		kind: MediaKind
 	): Promise<Params | undefined> {
+		console.log('--- consume')
 		if (!this.router.canConsume({ producerId, rtpCapabilities })) {
 			console.error('Can not consume')
 			return
@@ -173,15 +181,18 @@ export default class Room {
 	}
 
 	async removePeer(socketId: string) {
+		console.log('--- removePeer')
 		this.peers.get(socketId)?.close()
 		this.peers.delete(socketId)
 	}
 
 	closeProducer(socketId: string, producerId: string) {
+		console.log('--- closeProducer')
 		this.peers.get(socketId)?.closeProducer(producerId)
 	}
 
 	broadCast(socketId: string, message: string, data: any) {
+		console.log('--- broadcast')
 		for (let otherID of Array.from(this.peers.keys()).filter(
 			(id) => id !== socketId
 		)) {
@@ -190,14 +201,17 @@ export default class Room {
 	}
 
 	send(socketId: string, message: string, data: any) {
+		console.log('--- send')
 		this.io.to(socketId).emit(message, data)
 	}
 
 	getPeers(): Map<string, Peer> {
+		console.log('--- getPeers')
 		return this.peers
 	}
 
 	toJson(): JSONResponse {
+		console.log('--- toJson')
 		return {
 			id: this.id,
 			peers: JSON.stringify([...this.peers])

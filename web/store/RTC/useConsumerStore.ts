@@ -49,7 +49,9 @@ const useConsumerStore = create<ConsumerStore>((set, get) => {
 		)
 	}
 
+	// FIXME: then here after socketStore/initSockets
 	const consume = async (producerId: string) => {
+		console.log('Consuming')
 		const { consumer, stream, kind } = await getConsumeStream(producerId)
 
 		useRoomStore.getState().consumers.set(consumer.id, consumer)
@@ -59,7 +61,15 @@ const useConsumerStore = create<ConsumerStore>((set, get) => {
 		newRemoteStreams.type =
 			kind === MediaType.video ? MediaType.video : MediaType.audio
 
-		useRoomStore.getState().remoteStreams.push(newRemoteStreams)
+		console.log('I am here', newRemoteStreams)
+
+		useRoomStore
+			.getState()
+			.setRemoteStream(
+				newRemoteStreams.id,
+				newRemoteStreams.stream,
+				newRemoteStreams.type
+			)
 
 		consumer.on('trackended', () => {
 			removeConsumer(consumer.id)

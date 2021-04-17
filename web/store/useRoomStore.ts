@@ -22,11 +22,12 @@ type RoomState = {
 	personalStream: RoomStream
 	remoteStreams: RoomStream[]
 	setPersonalStream: (id: string, stream: MediaStream, type: MediaKind) => void
+	setRemoteStream: (id: string, stream: MediaStream, type: MediaKind) => void
 	initializeRoom: (id: string, name: string) => void
 	exit: (offline: boolean) => void
 }
 
-const useRoomStore = create<RoomState>((set) => {
+const useRoomStore = create<RoomState>((set, get) => {
 	const initializeRoom = async (id: string, name: string) => {
 		set(() => ({ id, name }))
 		await createRoom(id)
@@ -89,6 +90,17 @@ const useRoomStore = create<RoomState>((set) => {
 		}))
 	}
 
+	const setRemoteStream = (
+		id: string,
+		stream: MediaStream,
+		type: MediaKind
+	) => {
+		const newRemote = { id, stream, type }
+		const remotes: RoomStream[] = [...get().remoteStreams, newRemote]
+
+		set(() => ({ remoteStreams: remotes }))
+	}
+
 	return {
 		id: '',
 		name: '',
@@ -97,6 +109,7 @@ const useRoomStore = create<RoomState>((set) => {
 		personalStream: null,
 		remoteStreams: [],
 		setPersonalStream,
+		setRemoteStream,
 		initializeRoom,
 		exit
 	}

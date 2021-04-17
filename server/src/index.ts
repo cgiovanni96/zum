@@ -47,9 +47,10 @@ const main = async () => {
 	})
 
 	io.on('connection', (socket: ExtendedSocket) => {
-		console.log('client connected')
+		console.log('--- connection')
 
 		socket.on('createRoom', async ({ roomId }, cb) => {
+			console.log('--- createRoom')
 			if (!roomList.has(roomId)) {
 				console.log(`---created room--- ${roomId}`)
 				const worker = getWorker(soupWorkers, nextWorkerIdx)
@@ -59,6 +60,7 @@ const main = async () => {
 		})
 
 		socket.on('join', ({ roomId, name }, cb) => {
+			console.log('--- join')
 			if (!roomList.has(roomId)) return cb({ error: 'room not found' })
 
 			roomList.get(roomId)?.addPeer(new Peer(socket.id, name))
@@ -68,6 +70,7 @@ const main = async () => {
 		})
 
 		socket.on('getProducers', () => {
+			console.log('--- getProducers')
 			if (!socket.roomId) return
 			if (!roomList.has(socket.roomId)) return
 			const producerList = roomList.get(socket.roomId)?.getProducerListForPeer()
@@ -76,7 +79,7 @@ const main = async () => {
 		})
 
 		socket.on('getRouterCapabilities', (_, cb) => {
-			console.log('hello')
+			console.log('--- getRouterCapabilities')
 			if (!socket.roomId) return
 			try {
 				cb(roomList.get(socket.roomId)?.getRtpCapabilities())
@@ -86,6 +89,7 @@ const main = async () => {
 		})
 
 		socket.on('createTransport', async (_, cb) => {
+			console.log('--- createTransport')
 			if (!socket.roomId) return
 			try {
 				const webRtcParams = await roomList
@@ -101,6 +105,7 @@ const main = async () => {
 		socket.on(
 			'connectTransport',
 			async ({ transportId, dtlsParameters }, cb) => {
+				console.log('--- connectTransport')
 				if (!socket.roomId || !roomList.has(socket.roomId)) return
 				await roomList
 					.get(socket.roomId)
@@ -111,14 +116,9 @@ const main = async () => {
 		)
 
 		socket.on('produce', async ({ kind, rtpParameters, transportId }, cb) => {
+			console.log('--- producer')
 			if (!socket.roomId || !roomList.has(socket.roomId))
 				return cb({ error: 'not room' })
-
-			console.log('serveProducing')
-
-			// const producerId = await roomList
-			// 	.get(socket.roomId)
-			// 	?.produce(socket.id, transportId, rtpParameters, kind)
 
 			const room = roomList.get(socket.roomId)
 
@@ -129,7 +129,7 @@ const main = async () => {
 				kind
 			)
 
-			console.log('producerId', producerId)
+			console.log('--- producerId', producerId)
 
 			cb(producerId)
 		})
@@ -137,6 +137,7 @@ const main = async () => {
 		socket.on(
 			'consume',
 			async ({ transportId, producerId, rtpCapabilities, kind }, cb) => {
+				console.log('--- consume')
 				if (!socket.roomId || !roomList.has(socket.roomId))
 					return cb({ error: 'no room' })
 				const params = await roomList
@@ -148,6 +149,7 @@ const main = async () => {
 		)
 
 		socket.on('resume', async ({ peerId, transportId }, cb) => {
+			console.log('--- resume')
 			if (!socket.roomId || !roomList.has(socket.roomId))
 				return cb({ error: 'no room' })
 
@@ -161,23 +163,27 @@ const main = async () => {
 		})
 
 		socket.on('getRoomInfo', (_, cb) => {
+			console.log('--- getRoomInfo')
 			if (!socket.roomId || !roomList.has(socket.roomId))
 				return cb({ error: 'no room' })
 			cb(roomList.get(socket.roomId)?.toJson())
 		})
 
 		socket.on('disconnect', () => {
+			console.log('--- disconnect')
 			if (!socket.roomId || !roomList.has(socket.roomId)) return
 			roomList.get(socket.roomId)?.removePeer(socket.id)
 		})
 
 		socket.on('producerClosed', ({ producerId }, cb) => {
+			console.log('--- producerClosed')
 			if (!socket.roomId || !roomList.has(socket.roomId))
 				return cb({ error: 'no room' })
 			roomList.get(socket.roomId)?.closeProducer(socket.id, producerId)
 		})
 
 		socket.on('exitRoom', async (_, cb) => {
+			console.log('--- exitRoom')
 			if (!socket.roomId || !roomList.has(socket.roomId))
 				return cb({ error: 'no room' })
 
@@ -192,6 +198,7 @@ const main = async () => {
 }
 
 export const room = () => {
+	console.log('--- room')
 	return Object.values(roomList).map((room: Room) => {
 		return {
 			id: room.id,

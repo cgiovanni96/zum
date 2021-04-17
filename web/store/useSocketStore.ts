@@ -32,6 +32,7 @@ const useSocketStore = create<SocketStore>((_, get) => {
 			useConsumerStore.getState().removeConsumer(consumerId)
 		})
 
+		// FIXME: this is the function that should be called to begin consuming
 		get().socket.on('newProducers', async (data: ProducerList) => {
 			console.log('new producers', data)
 			for (const { producerId } of data) {
