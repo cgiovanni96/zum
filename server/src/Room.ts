@@ -51,6 +51,7 @@ export default class Room {
 		console.log('--- getProducerList')
 		const producerList: ProducerList = []
 		this.peers.forEach((peer) => {
+			console.log('\n\n --- currentPeer:', peer.id)
 			peer.producers.forEach((producer) => {
 				producerList.push({ producerId: producer.id })
 			})
@@ -201,7 +202,7 @@ export default class Room {
 	}
 
 	send(socketId: string, message: string, data: any) {
-		console.log('--- send')
+		console.log('--- send to', socketId, ' message', message)
 		this.io.to(socketId).emit(message, data)
 	}
 

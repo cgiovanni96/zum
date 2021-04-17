@@ -45,7 +45,6 @@ const useProducerStore = create<ProducerStore>((set, get) => {
 		get().producerTransport.on(
 			'produce',
 			async ({ kind, rtpParameters }: ProduceTransportArgs, cb, errBack) => {
-				console.log('producing')
 				try {
 					const data = await useSocketStore
 						.getState()
@@ -130,7 +129,6 @@ const useProducerStore = create<ProducerStore>((set, get) => {
 		// 	return
 		// }
 
-		console.log('mediaconstraint: ', mediaConstraints)
 		let stream: MediaStream
 		try {
 			stream =
@@ -145,7 +143,6 @@ const useProducerStore = create<ProducerStore>((set, get) => {
 					? stream.getAudioTracks()[0]
 					: stream.getVideoTracks()[0]
 
-			console.log('track', track)
 			const params: ProducerOptions = { track }
 			if (type === MediaType.video) {
 				params.encodings = [
@@ -175,11 +172,8 @@ const useProducerStore = create<ProducerStore>((set, get) => {
 
 			useRoomStore.getState().producers.set(producer.id, producer)
 
-			if (type !== MediaType.audio) {
-				console.log('video type')
+			if (type !== MediaType.audio)
 				useRoomStore.getState().setPersonalStream(producer.id, stream, 'video')
-				console.log('personal Stream', useRoomStore.getState().personalStream)
-			}
 
 			producer.on('trackended', () => {
 				closeProducer(kind)

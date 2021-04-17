@@ -16,7 +16,8 @@ const useSocketStore = create<SocketStore>((_, get) => {
 		transports: ['websocket']
 	}
 
-	const url = `http://localhost:5000`
+	const url = `http://${process.env.NEXT_PUBLIC_SERVER_IP}:5000`
+	console.log(url)
 	const socket = io(url, opts)
 	const request = <T>(type: string, data: unknown): Promise<T> => {
 		return new Promise((resolve, reject) => {

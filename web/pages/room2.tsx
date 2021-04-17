@@ -6,11 +6,13 @@ import { MediaType } from '../store/RTC/types'
 import Media from '../components/Media'
 import useProducerStore from '../store/RTC/useProducerStore'
 import useRoomStore from '../store/useRoomStore'
+import useSocketStore from '../store/useSocketStore'
 
 const Room2: React.FC = () => {
 	const [userName, setUserName] = useState<string>('')
 	const roomStore = useRoomStore()
 	const producerStore = useProducerStore()
+	const socketStore = useSocketStore()
 	// const consumerStore = useConsumerStore()
 
 	useEffect(() => {
@@ -26,6 +28,10 @@ const Room2: React.FC = () => {
 		console.log('producers post ', roomStore.personalStream)
 	}
 
+	const checkSocket = () => {
+		console.log('socket: ', socketStore.socket)
+	}
+
 	return (
 		<>
 			<div>{userName} </div>
@@ -37,6 +43,8 @@ const Room2: React.FC = () => {
 				<button>close video</button>
 				<button>screen</button>
 				<button>close screen</button>
+
+				<button onClick={() => checkSocket()}>check socket </button>
 				<br />
 			</div>
 

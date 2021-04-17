@@ -45,6 +45,7 @@ const useRoomStore = create<RoomState>((set, get) => {
 	const join = async (roomId: string, name: string) => {
 		try {
 			await useSocketStore.getState().request('join', { roomId, name })
+			await useSocketStore.getState().initSockets()
 
 			const data = await useSocketStore
 				.getState()
